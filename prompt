@@ -1,0 +1,54 @@
+#   -------------------------------
+#       PROMPT
+#   -------------------------------
+show_last_exit_code(){
+	LAST_EXIT_CODE=$?
+	if [ "$LAST_EXIT_CODE" -ne "0" ]
+	then
+		echo -e "\033[1;31m${LAST_EXIT_CODE} ✗\033[00m "
+	fi
+}
+show_git_status(){
+	git branch &>/dev/null;\
+	if [ $? -eq 0 ]
+	then 
+		GIT_STATUS=`git status`
+		echo $GIT_STATUS | grep "nothing to commit" | grep "Your branch is up-to-date" > /dev/null 2>&1
+
+  		if [ "$?" -eq "0" ] 
+		then 
+    			echo -e "\033[1;32m"$(__git_ps1 " (%s)")
+  		else
+			GIT_ICONS=""
+			echo $GIT_STATUS | grep "Your branch is behind" > /dev/null 2>&1
+			if [ "$?" -eq "0" ]
+			then
+				GIT_ICONS="${GIT_ICONS} ⬇"
+			fi
+			echo $GIT_STATUS | grep "Your branch" | grep "have diverged" > /dev/null 2>&1
+                        if [ "$?" -eq "0" ]
+                        then
+                                GIT_ICONS="${GIT_ICONS} ⬆⬇"
+                        fi
+                        echo $GIT_STATUS | grep "Your branch is ahead of" > /dev/null 2>&1
+                        if [ "$?" -eq "0" ]
+                        then
+                                GIT_ICONS="${GIT_ICONS} ⬆"
+                        fi
+			echo $GIT_STATUS | grep "working directory clean" > /dev/null 2>&1
+                        if [ "$?" -ne "0" ]
+                        then
+                                GIT_ICONS="${GIT_ICONS} ✎"
+                        fi
+
+			echo -e "\033[1;31m"$(__git_ps1 " (%s${GIT_ICONS} )")
+  		fi
+	fi
+}
+set_window_title(){
+	echo -ne "\033]0;${PWD/$HOME/~}\007\033[00m"
+	exec "$@"
+}
+export PS1="\n\$(show_last_exit_code)\[\033[1;34m\]\w\[\033[00m\]\[\033[0;35m\]\$(show_git_status)\[\033[00m\]\n\[\033[1;34m\]$\[\033[00m\] "
+export PS2="\[\033[1;34m\]>\[\033[00m\] "
+PROMPT_COMMAND="set_window_title"
